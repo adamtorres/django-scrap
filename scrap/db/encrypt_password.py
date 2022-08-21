@@ -45,6 +45,7 @@ import secrets
 import stringprep
 import unicodedata
 
+
 class EncryptPassword:
     ALGORITHMS = {
         'md5': {
@@ -75,7 +76,6 @@ class EncryptPassword:
         stringprep.in_table_c9,
     )
 
-
     def __init__(self, user, password, algorithm='scram-sha-256', **kwargs):
         self.user = user
         self.password = password
@@ -94,7 +94,7 @@ class EncryptPassword:
         return getattr(self, algorithm['encryptor'])(algorithm['digest'], **kwargs)
 
     def _bytes_xor(self, a, b):
-        """XOR two bytestrings together"""
+        """XOR two byte-strings together"""
         return bytes(a_i ^ b_i for a_i, b_i in zip(a, b))
 
     def _encrypt_md5(self, digest, **kwargs):
@@ -142,9 +142,10 @@ class EncryptPassword:
         # commonly mapped to nothing characters are removed
         # Table C.1.2 -- non-ASCII spaces
         # Table B.1 -- "Commonly mapped to nothing"
-        normalized_password = u"".join(
-            [' ' if stringprep.in_table_c12(c) else c
-            for c in normalized_password if not stringprep.in_table_b1(c)])
+        normalized_password = u"".join([
+            ' ' if stringprep.in_table_c12(c) else c
+            for c in normalized_password if not stringprep.in_table_b1(c)
+        ])
 
         # If at this point the password is empty, PostgreSQL uses the original
         # password
@@ -191,7 +192,6 @@ class EncryptPassword:
 
         # return the normalized password
         return normalized_password
-
 
     def _scram_sha_256_generate_salted_password(self, password, salt_length, iterations, digest):
         """This follows the "Hi" algorithm specified in RFC5802"""
