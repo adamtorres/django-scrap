@@ -1,1 +1,2 @@
+from .complicated_model_choice_field import ComplicatedModelChoiceField
 from .money_field import MoneyField
