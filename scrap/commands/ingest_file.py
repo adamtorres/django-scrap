@@ -12,6 +12,7 @@ class IngestCommand(BaseCommand):
     replace_empty_str_fields = []
     replace_empty_str_value = 0
     data_row_fields = []
+    generated_data_row_fields = []
 
     def __init__(self, stdout=None, stderr=None, no_color=False, force_color=False):
         super().__init__(stdout=stdout, stderr=stderr, no_color=no_color, force_color=force_color)
@@ -19,7 +20,7 @@ class IngestCommand(BaseCommand):
         Example usage:
             python manage.py {self.script_name} --datafile <filename>
         """
-        self.DataRow = namedtuple("DataRow", self.data_row_fields)
+        self.DataRow = namedtuple("DataRow", self.data_row_fields + self.generated_data_row_fields)
         self.field_index = {field: f for f, field in enumerate(self.DataRow._fields)}
 
     def add_arguments(self, parser):
