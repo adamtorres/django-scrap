@@ -1,7 +1,12 @@
+import logging
+
 from django.core import exceptions
 from django.db import models
 
 from scrap import utils as sc_utils
+
+
+logger = logging.getLogger(__name__)
 
 
 class WideFilterManagerMixin:
@@ -31,6 +36,7 @@ class WideFilterManagerMixin:
                     combined_filter = combined_filter | self.model.get_wide_filter(terms, wide_filter_name=all_field)
                 break
             combined_filter = combined_filter & self.model.get_wide_filter(terms, wide_filter_name=field)
+        logger.debug(f"WideFilterManagerMixin.wide_filter: combined_filter = {combined_filter}")
         qs = self.filter(combined_filter).order_by().distinct('id')
         # Use the above qs as the filter for a clean queryset.  This allows users of the wide_filter to do whatever
         # they want and not have to tiptoe around the distinct clause.

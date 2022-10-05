@@ -1,4 +1,9 @@
+import logging
+
 from rest_framework import response, views
+
+
+logger = logging.getLogger(__name__)
 
 
 class WideFilterView(views.APIView):
@@ -40,7 +45,9 @@ class WideFilterView(views.APIView):
         #     ('name', ('ground', 'beef')),
         #     ('category', 'meats'),
         # ]
+        log_prefix = "WideFilterView.request_params_to_search_terms"
         filter_fields = request.GET.getlist('wide_filter_fields[]')
+        logger.debug(f"{log_prefix}: filter_fields = {filter_fields}")
         filter_fields_and_values = []
         for filter_field in filter_fields:
             filter_tuple = ()
@@ -51,4 +58,6 @@ class WideFilterView(views.APIView):
                 filter_tuple = (filter_field, (request.GET.getlist(f"{filter_field}[]") or []))
             if filter_tuple:
                 filter_fields_and_values.append(filter_tuple)
+        logger.debug(
+            f"{log_prefix}: filter_fields_and_values = {filter_fields_and_values}")
         return filter_fields_and_values

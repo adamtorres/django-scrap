@@ -13,6 +13,7 @@ class IngestCommand(BaseCommand):
     replace_empty_str_value = 0
     data_row_fields = []
     generated_data_row_fields = []
+    additional_options = {}
 
     def __init__(self, stdout=None, stderr=None, no_color=False, force_color=False):
         super().__init__(stdout=stdout, stderr=stderr, no_color=no_color, force_color=force_color)
@@ -50,9 +51,10 @@ class IngestCommand(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        datafile = options.get('datafile')
-        case = options.get('case')
-        skip_lines = options.get('skip_lines')
+        datafile = options.pop('datafile')
+        case = options.pop('case')
+        skip_lines = options.pop('skip_lines')
+        self.additional_options = options
 
         print(f"skip-lines = {skip_lines!r}, case = {case!r}")
         data = self.initialize_data()
