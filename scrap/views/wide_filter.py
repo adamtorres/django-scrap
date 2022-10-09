@@ -18,6 +18,7 @@ class WideFilterView(views.APIView):
     def get(self, request, format=None):
         # wide_filter_fields = list of GET keys to look for.  So other args can be used and not get in the way.
         # /inventory/api_rawitem/wide_filter/?wide_filter_fields=name&name=beef+ground&empty=false
+        # /inventory/api_rawitem/wide_filter/?wide_filter_fields[]=name&name=beef+ground&empty=false
         if (request.GET.get('empty') or 'true') == 'true':
             # Shortcut an empty filter request.  We could send back a sample set, all, or none.
             return response.Response(self.serializer(self.get_queryset().none(), many=True).data)
