@@ -1,0 +1,5 @@
+.autocomplete-widget .dropdown-menu {
+    width: 80vw;
+    max-height: 15em;
+    overflow: scroll;
+}

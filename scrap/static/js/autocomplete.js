@@ -7,10 +7,18 @@ var autocomplete_copy_values = {}; // dict of autocomplete_column:form_field pai
 var autocomplete_li_template_id = "id of li to use as a template";
 var autocomplete_remove_decimal_fields = []
 var autocomplete_container_id = "line_item_list";
+var autocomplete_debug_log = false;  // set to true to get a lot of logging.
 
 $( document ).ready(function() {
+    // TODO: Why can't this call autocomplete_setup_events()?  Did I not try it?  Or does it need to be done after the
+    //  main page sets the above globals?
     ac_no_results();
 })
+function ac_logit(value) {
+    if (autocomplete_debug_log) {
+        logit(value);
+    }
+}
 function ac_start_timer(caller) {
     window.clearTimeout(autocomplete_keypress_timer);
     autocomplete_keypress_timer = setTimeout(ac_timer_elapsed_func, 750, caller);
@@ -61,7 +69,7 @@ function ac_timer_elapsed_func(caller_obj) {
         ac_no_results();
         return;
     }
-    logit(`timer: ${t.prop('id')} send &quot;${text_value}&quot; to ${autocomplete_url}`);
+    ac_logit(`timer: ${t.prop('id')} send &quot;${text_value}&quot; to ${autocomplete_url}`);
     var jqxhr = $.ajax({
         url: autocomplete_url,
         type: "get",
@@ -85,64 +93,127 @@ function ac_timer_elapsed_func(caller_obj) {
         if (count === 0) {
             ac_no_results();
         }
-        logit(`Got ${count} results for "${this.terms}".`)
+        ac_logit(`Got ${count} results for "${this.terms}".`)
         if (d_caller.find('.dropdown-menu').is(":hidden")){
             // logit("dropdown is hidden, toggling dropdown");
             // TODO: toggle doesn't work.
-            // d_caller.dropdown('toggle');
+            d_caller.dropdown('toggle');
         } else {
-            logit("NOT toggling dropdown");
+            // ac_logit("NOT toggling dropdown");
         }
     })
     .fail(function() {
-        logit("ajax fail");
+        ac_logit("ajax fail");
     })
     .always(function() {
-        logit("ajax complete");
+        // ac_logit("ajax complete");
     });
 }
 function ac_get_dropdown_parent(e) {
+    // confirmed used when typing into text box ////////////////////////////////////////////////////////////////
     // Given any element within a dropdown tree, return the top-most element.
-    return $(e).parents(".dropdown");
+    let e_jq = $(e);
+    let ret = e_jq.parents(".dropdown");
+    // measure_form.html
+    // ac_get_dropdown_parent(undefined) = id_item-dropdown, field_name = item
+    // sourceitem_create.html
+    // ac_get_dropdown_parent(undefined) = id_lineitemform-0-source_category-dropdown, field_name = source_category
+    ac_logit(`ac_get_dropdown_parent(${e_jq.attr('id')}) = ${ret.attr('id')}, field_name = ${ret.attr('data-field-name')}`);
+    // ret = id_lineitemform-0-cryptic_name-dropdown
+    return ret;
 }
 function ac_get_dropdown_div(p) {
     return p.children(".dropdown");
 }
 function ac_get_dropdown_textbox(p) {
-    return p.children("input[type='text']");
+    // confirmed used when typing into text box ////////////////////////////////////////////////////////////////
+    // measure_form.html
+    // ac_get_dropdown_textbox(id_item-dropdown) = id_item-text
+    // sourceitem_create.html
+    // ac_get_dropdown_textbox(id_lineitemform-0-source_category-dropdown) = id_lineitemform-0-source_category-text
+    let ret = p.children("input[type='text']");
+    ac_logit(`ac_get_dropdown_textbox(${p.attr('id')}) = ${ret.attr('id')}`);
+    return ret;
 }
 function ac_get_dropdown_list(p) {
-    return p.children(".dropdown-menu");
+    // confirmed used when typing into text box ////////////////////////////////////////////////////////////////
+    let ret = p.children(".dropdown-menu");
+    ac_logit(`ac_get_dropdown_list(${p.attr('id')}) = ${ret.attr('id')}`);
+    return ret;
 }
 function ac_get_hidden_model_field(p) {
-    id_text = p.prop("id");
+    // measure_form.html
+    // ac_get_hidden_model_field([object Object]) = item
+    // sourceitem_create.html
+    // ac_get_hidden_model_field([object Object]) = lineitemform-0-source_category
+    let id_text = p.prop("id");
     id_text = id_text.substring(0, id_text.length - "-dropdown".length);
-    return $(document.getElementById(id_text));
+    let ret = $(document.getElementById(id_text));
+    ac_logit(`ac_get_hidden_model_field(${p}) = ${ret.attr('name')}`);
+    return ret;
 }
 function ac_get_autocomplete_field(e, field_name) {
-    return e.find(`div[name="${field_name}"]`);
+    // measure_form.html
+    // !!! ac_get_autocomplete_field(undefined, id) = undefined
+    // sourceitem_create.html
+    // ac_get_autocomplete_field(undefined, cryptic_name) = cryptic_name
+    // ac_get_autocomplete_field(undefined, source_category) = source_category
+    let ret = e.find(`div[name="${field_name}"]`);
+    ac_logit(`ac_get_autocomplete_field(${e.attr('id')}, ${field_name}) = ${ret.attr('name')}`);
+    return ret;
 }
-function ac_get_form_field(field_name){
-    //field_name = id=id_items-0-unit_size, name=items-0-unit_size
+function ac_get_form_field_name(p){
+    // measure_form.html
+    // ac_get_form_field_name(id_item-dropdown) = item
+    // sourceitem_create.html
+    // ac_get_form_field_name(id_lineitemform-0-source_category-dropdown) = source_category
+    // Given "id_lineitemform-0-cryptic_name-dropdown"
+    // Return the data-field-name from tag.
+    let ret = p.attr("data-field-name");
+    ac_logit(`ac_get_form_field_name(${p.attr('id')}) = ${ret}`);
+    return ret;
 }
 function ac_get_form_prefix(p) {
-    // "id_items-0-item-dropdown"
-    // returns "id_items-0-"
+    // measure_form.html
+    // ac_get_form_prefix(id_item-dropdown) - 'id_item-dropdown' =
+    // sourceitem_create.html
+    // ac_get_form_prefix(id_lineitemform-0-source_category-dropdown) - 'source_category-dropdown' = id_lineitemform-0-
     let id_text = p.prop("id");
-    return id_text.substring(0, id_text.length - "item-dropdown".length);
+    let remove_this = `${ac_get_form_field_name(p)}-dropdown`;
+    if (!ac_is_formset()) {
+        remove_this = id_text;
+    }
+    let ret = id_text.substring(0, id_text.length - remove_this.length);
+    ac_logit(`ac_get_form_prefix(${p.attr('id')}) - '${remove_this}' = ${ret}`);
+    return ret;
 }
 function ac_get_form_field(p, form_prefix, form_field) {
+    // measure_form.html
+    // ac_get_form_field(id_item-dropdown, , id_item-text) = id_item-text
+    // <input type="hidden" name="item" placeholder="Pick an item" required="" id="id_item" value="nope">
+    // sourceitem_create.html
+    // ac_get_form_field(id_lineitemform-0-source_category-dropdown, id_lineitemform-0-, source_category) = id_lineitemform-0-source_category
+    // <input type="hidden" name="lineitemform-0-source_category" placeholder="category from source" id="id_lineitemform-0-source_category" value="nope">
     // return $(document.getElementById(`${form_prefix}${form_field}`));
-    return $(`#${form_prefix}${form_field}`);
+    if (!ac_is_formset()) {
+        form_prefix = "";
+    }
+    let ret = $(`#${form_prefix}${form_field}`);
+    ac_logit(`ac_get_form_field(${p.attr('id')}, ${form_prefix}, ${form_field}) = ${ret.attr('id')}`);
+    return ret;
+}
+function ac_is_formset(){
+    return ($(`#${autocomplete_container_id}`).find(".empty-form").length !== 0);
 }
 function autocomplete_setup_events() {
-    $(`#${autocomplete_container_id}`).on("click", "button", function(e) {
-        logit("Log of jquery events.", true);
+    let autocomplete_container = $(`#${autocomplete_container_id}`);
+    autocomplete_container.on("click", "button", function(e) {
+        ac_logit("Log of jquery events.", true);
     });
-    $(`#${autocomplete_container_id}`).on("keypress", "input", function(e) {
+    autocomplete_container.on("keypress", "input", function(e) {
         ac_start_timer(ac_get_dropdown_parent(this));
     })
-    $(`#${autocomplete_container_id}`).on("keydown", "input", function(e) {
+    autocomplete_container.on("keydown", "input", function(e) {
         switch (e.keyCode) {
             case 8: // Backspace
                 ac_start_timer(ac_get_dropdown_parent(this));
@@ -158,39 +229,50 @@ function autocomplete_setup_events() {
                 break;
         }
     });
-    $(`#${autocomplete_container_id}`).on("focusout", "input", function() {
+    autocomplete_container.on("focusout", "input", function() {
         window.clearTimeout(autocomplete_keypress_timer);
     })
-    $(`#${autocomplete_container_id}`).on('click', 'a.dropdown-item', function() {
-        // $( "div" ).data( "role" ) === "page";
-        var e = $(this);
-        var p = ac_get_dropdown_parent(e);
-        var n = ac_get_autocomplete_field(e, autocomplete_display_field);
-        var selected_item = n.text();
-        var t = ac_get_dropdown_textbox(p);
-        var h = ac_get_hidden_model_field(p);
+    autocomplete_container.on('click', 'a.dropdown-item', function() {
+        let e = $(this);
+        let p = ac_get_dropdown_parent(e);
+        let selected_item = "";
+        let n = "nope";
+        if (autocomplete_display_field !== "") {
+            n = ac_get_autocomplete_field(e, autocomplete_display_field);
+            selected_item = n.text();
+        }
+        let t = ac_get_dropdown_textbox(p);
+        let h = ac_get_hidden_model_field(p);
         let form_prefix = ac_get_form_prefix(p);
 
         for (const [key, value] of Object.entries(autocomplete_copy_values)) {
-            copy_field = ac_get_autocomplete_field(e, key);
-            form_field = ac_get_form_field(p, form_prefix, value);
+            let copy_field = ac_get_autocomplete_field(e, key);
+            let form_field = ac_get_form_field(p, form_prefix, value);
+            if (form_field.parent().hasClass('with-autocomplete')) {
+                let subform_field = $(`#${form_field.attr('id')}-text`)
+                ac_logit(`Changing ${subform_field.attr('id')} from "${subform_field.text()}" to "${copy_field.text()}"`)
+                subform_field.val(copy_field.text());
+            }
+            ac_logit(`Changing ${form_field.attr('id')} from "${form_field.text()}" to "${copy_field.text()}"`)
             form_field.val(copy_field.text());
         }
-        logit(`clicked dropdown item: &quot;${selected_item}&quot; ${e.data("id")} and setting ${t.prop("id")} AND ${h.prop("id")}`);
-        t.val(n.text());
+        ac_logit(`clicked dropdown item: &quot;${selected_item}&quot; ${e.data("id")} and setting ${t.prop("id")} AND ${h.prop("id")}`);
+        if (n !== "nope") {
+            t.val(n.text());
+        }
         h.val(e.data("id"));
         // $("#jquery-example-2-text").val(n.text());
     })
-    $(`#${autocomplete_container_id}`).on('show.bs.dropdown', 'div.dropdown', function () {
-        // logit("show.bs.dropdown");
+    autocomplete_container.on('show.bs.dropdown', 'div.dropdown', function () {
+        // ac_logit("show.bs.dropdown");
     })
-    $(`#${autocomplete_container_id}`).on('shown.bs.dropdown', 'div.dropdown', function () {
-        // logit("shown.bs.dropdown");
+    autocomplete_container.on('shown.bs.dropdown', 'div.dropdown', function () {
+        // ac_logit("shown.bs.dropdown");
     })
-    $(`#${autocomplete_container_id}`).on('hide.bs.dropdown', 'div.dropdown', function () {
-        // logit("hide.bs.dropdown");
+    autocomplete_container.on('hide.bs.dropdown', 'div.dropdown', function () {
+        // ac_logit("hide.bs.dropdown");
     })
-    $(`#${autocomplete_container_id}`).on('hidden.bs.dropdown', 'div.dropdown', function () {
-        // logit("hidden.bs.dropdown");
+    autocomplete_container.on('hidden.bs.dropdown', 'div.dropdown', function () {
+        // ac_logit("hidden.bs.dropdown");
     })
 }
