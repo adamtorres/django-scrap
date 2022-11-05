@@ -8,6 +8,7 @@ var autocomplete_li_template_id = "id of li to use as a template";
 var autocomplete_remove_decimal_fields = []
 var autocomplete_container_id = "line_item_list";
 var autocomplete_debug_log = false;  // set to true to get a lot of logging.
+var autocomplete_extra_data_func = "Set to a function which returns some extra data for the autocomplete to pass on to the server.";
 
 $( document ).ready(function() {
     // TODO: Why can't this call autocomplete_setup_events()?  Did I not try it?  Or does it need to be done after the
@@ -69,14 +70,19 @@ function ac_timer_elapsed_func(caller_obj) {
         ac_no_results();
         return;
     }
+    let data_to_send = {
+        terms: text_value,
+        field: "cryptic_name",
+    };
+    if (autocomplete_extra_data_func instanceof Function) {
+        data_to_send['extra'] = JSON.stringify(autocomplete_extra_data_func());
+    }
     ac_logit(`timer: ${t.prop('id')} send &quot;${text_value}&quot; to ${autocomplete_url}`);
+    console.log(data_to_send);
     var jqxhr = $.ajax({
         url: autocomplete_url,
         type: "get",
-        data: {
-            terms: text_value,
-            field: "cryptic_name",
-        },
+        data: data_to_send,
         caller_id: caller.prop('id'),
         terms: text_value
     })
@@ -249,17 +255,19 @@ function autocomplete_setup_events() {
             let copy_field = ac_get_autocomplete_field(e, key);
             let form_field = ac_get_form_field(p, form_prefix, value);
             if (form_field.parent().hasClass('with-autocomplete')) {
+                // This is because the autocomplete fields have an input for display purposes and a hidden input for
+                // saving.  The display input is the same id as the hidden but with "-text" added.
                 let subform_field = $(`#${form_field.attr('id')}-text`)
-                ac_logit(`Changing ${subform_field.attr('id')} from "${subform_field.text()}" to "${copy_field.text()}"`)
+                ac_logit(`Changing autocomplete field ${subform_field.attr('id')} from "${subform_field.text()}" to "${copy_field.text()}"`)
                 subform_field.val(copy_field.text());
             }
             ac_logit(`Changing ${form_field.attr('id')} from "${form_field.text()}" to "${copy_field.text()}"`)
             form_field.val(copy_field.text());
         }
-        ac_logit(`clicked dropdown item: &quot;${selected_item}&quot; ${e.data("id")} and setting ${t.prop("id")} AND ${h.prop("id")}`);
-        if (n !== "nope") {
-            t.val(n.text());
-        }
+        // ac_logit(`clicked dropdown item: &quot;${selected_item}&quot; ${e.data("id")} and setting ${t.prop("id")} AND ${h.prop("id")}`);
+        // if (n !== "nope") {
+        //     t.val(n.text());
+        // }
         h.val(e.data("id"));
         // $("#jquery-example-2-text").val(n.text());
     })

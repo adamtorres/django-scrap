@@ -2,6 +2,7 @@ import inspect
 import sys
 
 from .dates import get_monthly_date_range, last_months, recent_quarters
+from .lists import reduce_list
 from .uuid import is_valid_uuid
 
 

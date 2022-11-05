@@ -2,7 +2,7 @@
 <div id="{{ widget.attrs.id }}-div" class="autocomplete-widget">
     {# TODO: Add readonly fields for pack_quantity and unit_size #}
     <div class="dropdown" id="{{ widget.attrs.id }}-dropdown" data-field-name="{{ widget.field_name }}">
-        <input id="{{ widget.attrs.id }}-text" type="text" class="dropdown-toggle" data-bs-toggle="dropdown"
+        <input name="{{ widget.attrs.id }}-text" id="{{ widget.attrs.id }}-text" type="text" class="dropdown-toggle" data-bs-toggle="dropdown"
                aria-haspopup="true" aria-expanded="false" placeholder="{{ widget.attrs.placeholder }}" />
         <ul class="dropdown-menu shadow-lg" aria-labelledby="{{ widget.attrs.id }}-text" id="{{ widget.attrs.id }}-dropdown-menu">
         </ul>

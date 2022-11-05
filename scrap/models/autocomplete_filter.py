@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class AutocompleteFilterManagerMixin:
-    def autocomplete_filter(self, terms, field):
+    def autocomplete_filter(self, terms, field, extra_data=None):
         """
         Goal: search the model and return a distinct list of the specified field.
         The search can look in more than just the specified field?
         """
         if isinstance(terms, str):
             terms = terms.split()
-        combined_filter = self.model.get_autocomplete_filter(terms)
+        combined_filter = self.model.get_autocomplete_filter(terms, extra_data)
         logger.debug(f"AutocompleteFilterManagerMixin.autocomplete_filter: combined_filter = {combined_filter}")
         qs = self.filter(combined_filter).order_by().distinct('id')
         # Use the above qs as the filter for a clean queryset.  This allows users of the autocomplete_filter to do
@@ -29,6 +29,7 @@ class AutocompleteFilterManagerMixin:
 
 class AutocompleteFilterModelMixin:
     # autocomplete_filter_fields = ['list', 'of', 'fields', 'to', 'search]
+    autocomplete_extra_data_fields = dict()  # key=key from extra_data, value=field on model
 
     @classmethod
     def get_available_autocomplete_filters(cls):
@@ -39,7 +40,7 @@ class AutocompleteFilterModelMixin:
         return cls.autocomplete_filter_fields
 
     @classmethod
-    def get_autocomplete_filter(cls, terms):
+    def get_autocomplete_filter(cls, terms, extra_data=None):
         q = models.Q()
         autocomplete_filter_fields = cls.autocomplete_filter_fields
         if isinstance(autocomplete_filter_fields, str):
@@ -58,4 +59,15 @@ class AutocompleteFilterModelMixin:
                         continue
                 term_q = term_q & models.Q(**{f"{field}{filter_func}": search_term})
             q = q | term_q
+        if extra_data and cls.autocomplete_extra_data_fields:
+            ed_q = models.Q()
+            for ed_field in extra_data.keys():
+                if ed_field not in cls.autocomplete_extra_data_fields:
+                    logger.error(f"Missing autocomplete_extra_data_fields key '{ed_field}'.  Ignoring it as a result.")
+                else:
+                    # Currently using this just with uuids so not concerned about icontains or such.
+                    ed_q = ed_q & models.Q(**{cls.autocomplete_extra_data_fields[ed_field]: extra_data[ed_field]})
+            # Because of the possibility ed_field isn't in autocomplete_extra_data_fields, the ed_q might be empty.
+            # But that doesn't make a difference and Django handles the empty Q() just fine.
+            q = q & ed_q
         return q
