@@ -24,7 +24,9 @@ class AutocompleteFilterView(views.APIView):
         field = request.GET.get('field')
         extra_data_raw = request.GET.get('extra')
         logger.debug(f"AutocompleteFilterView.get: extra_data = {extra_data_raw}")
-        extra_data = json.loads(extra_data_raw)
+        extra_data = None
+        if extra_data_raw:
+            extra_data = json.loads(extra_data_raw)
         if not terms or not field:
             return response.Response(self.serializer(self.get_queryset().none(), many=True).data)
         qs = self.filter_qs(terms, field, extra_data)
