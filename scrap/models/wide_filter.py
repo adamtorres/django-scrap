@@ -70,8 +70,7 @@ class WideFilterModelMixin:
             wide_filter_fields = [wide_filter_fields]
         for field in wide_filter_fields:
             if isinstance(search_terms, str):
-                # TODO: should this split the str?
-                search_terms = [search_terms]
+                search_terms = search_terms.split()
             term_q = models.Q()
             for search_term in search_terms:
                 filter_func = "__icontains" if isinstance(search_term, str) else ""

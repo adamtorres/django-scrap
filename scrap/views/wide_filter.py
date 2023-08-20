@@ -53,7 +53,7 @@ class WideFilterView(views.APIView):
         for filter_field in filter_fields:
             filter_tuple = ()
             if filter_field in request.GET:
-                filter_tuple = (filter_field, (request.GET.get(filter_field) or '').split())
+                filter_tuple = (filter_field, request.GET.get(filter_field) or '')
             if f"{filter_field}[]" in request.GET:
                 # TODO: this doesn't call split.  Does that mean these can include spaces?
                 filter_tuple = (filter_field, (request.GET.getlist(f"{filter_field}[]") or []))
