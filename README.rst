@@ -63,3 +63,4 @@ Install the package via ``requirements.txt``::
 
     # Line from requirements.txt shows a relative path to the folder containing 'setup.py'.
     ../django-scrap
+
