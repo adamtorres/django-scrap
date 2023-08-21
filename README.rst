@@ -14,7 +14,7 @@ Quick Start
         'scrap',
     ]
 
-2. Add '' to your 'MIDDLEWARE' setting if you want queries logged.  I believe it has to be first in the list.  Probably should check on that.::
+2. Add 'scrap.db.QueryCountDebugMiddleware' to your 'MIDDLEWARE' setting if you want queries logged.  I believe it has to be first in the list.  Probably should check on that.::
 
     MIDDLEWARE = [
         'scrap.db.QueryCountDebugMiddleware',
