@@ -24,6 +24,7 @@ class AutocompleteFilterManagerMixin:
         # whatever they want and not have to tiptoe around the distinct clause.
         # Ex:
         # RawItem.objects.autocomplete_filter(['burger', 'bun'], 'cryptic_name').order_by('cryptic_name')
+        # TODO: Make this return the most recent item matching the filter.
         return self.filter(id__in=qs).order_by().order_by(field).distinct(field)
 
 

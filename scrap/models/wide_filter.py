@@ -10,6 +10,25 @@ logger = logging.getLogger(__name__)
 
 
 class WideFilterManagerMixin:
+    def get_combined_filter(self, search_terms, exclude_filter=False):
+        combined_filter = models.Q()
+        for field, terms in search_terms:
+            if field == 'all' and not exclude_filter:
+                # ignore all other fields specified in search_terms.  Using only the terms on 'all', iterate over all
+                # available wide filter fields on the model.
+                # Important difference! This returns an ORed filter meaning the search terms do not have to be in all
+                # the various fields but all the terms still have to be in an individual field.
+                combined_filter = models.Q()
+                for all_field in self.model.get_available_wide_filters():
+                    if all_field == 'all':
+                        continue
+                    combined_filter = combined_filter | self.model.get_wide_filter(terms, wide_filter_name=all_field)
+                break
+            if field.startswith("-") != exclude_filter:
+                continue
+            combined_filter = combined_filter & self.model.get_wide_filter(terms, wide_filter_name=field)
+        return combined_filter
+
     def wide_filter(self, search_terms):
         """
         Casts a wide net to find records and hence a 'wide_filter'.
@@ -22,20 +41,7 @@ class WideFilterManagerMixin:
         Will search all relations listed in model.filter_fields['name'] for 'ground' and 'beef'.
         A name which has just 'beef' will not match.
         """
-        combined_filter = models.Q()
-        for field, terms in search_terms:
-            if field == 'all':
-                # ignore all other fields specified in search_terms.  Using only the terms on 'all', iterate over all
-                # available wide filter fields on the model.
-                # Important difference! This returns an ORed filter meaning the search terms do not have to be in all
-                # the various fields but all the terms still have to be in an individual field.
-                combined_filter = models.Q()
-                for all_field in self.model.get_available_wide_filters():
-                    if all_field == 'all':
-                        continue
-                    combined_filter = combined_filter | self.model.get_wide_filter(terms, wide_filter_name=all_field)
-                break
-            combined_filter = combined_filter & self.model.get_wide_filter(terms, wide_filter_name=field)
+        combined_filter = self.get_combined_filter(search_terms)
         logger.debug(f"WideFilterManagerMixin.wide_filter: combined_filter = {combined_filter}")
         qs = self.filter(combined_filter).order_by().distinct('id')
         # Use the above qs as the filter for a clean queryset.  This allows users of the wide_filter to do whatever
@@ -64,6 +70,10 @@ class WideFilterModelMixin:
 
     @classmethod
     def get_wide_filter(cls, search_terms, wide_filter_name='name'):
+        return_exclude_filter = False
+        if wide_filter_name.startswith("-"):
+            wide_filter_name = wide_filter_name[1:]
+            return_exclude_filter = True
         wide_filter_fields = cls.get_wide_filter_fields(wide_filter_name)
         q = models.Q()
         if isinstance(wide_filter_fields, str):
