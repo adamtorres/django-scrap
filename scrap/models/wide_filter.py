@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 class WideFilterManagerMixin:
     def get_combined_filter(self, search_terms, exclude_filter=False):
         combined_filter = models.Q()
+        logger.debug(f"WideFilterManagerMixin.get_combined_filter:search_terms = {search_terms!r}")
         for field, terms in search_terms:
             if field == 'all' and not exclude_filter:
                 # ignore all other fields specified in search_terms.  Using only the terms on 'all', iterate over all
@@ -24,12 +25,17 @@ class WideFilterManagerMixin:
                         continue
                     combined_filter = combined_filter | self.model.get_wide_filter(terms, wide_filter_name=all_field)
                 break
-            if field.startswith("-") != exclude_filter:
-                continue
-            combined_filter = combined_filter & self.model.get_wide_filter(terms, wide_filter_name=field)
+            qs = self.model.get_wide_filter(terms, wide_filter_name=field)
+            logger.debug(f"WideFilterManagerMixin.get_combined_filter:for({field!r}, {terms!r})")
+            logger.debug(f"WideFilterManagerMixin.get_combined_filter:qs = {qs}")
+            logger.debug(f"WideFilterManagerMixin.get_combined_filter:combined_filter = {combined_filter}")
+            if field.startswith("-"):
+                qs.negate()
+            combined_filter = combined_filter & qs
+        logger.debug(f"WideFilterManagerMixin.get_combined_filter:Returning combined_filter = {combined_filter}")
         return combined_filter
 
-    def wide_filter(self, search_terms):
+    def wide_filter(self, search_terms, exclude_filter=False):
         """
         Casts a wide net to find records and hence a 'wide_filter'.
         search_terms is a list of tuples where each for each tuple [0] is the field and [1] is a str/iterable of terms.
@@ -41,7 +47,7 @@ class WideFilterManagerMixin:
         Will search all relations listed in model.filter_fields['name'] for 'ground' and 'beef'.
         A name which has just 'beef' will not match.
         """
-        combined_filter = self.get_combined_filter(search_terms)
+        combined_filter = self.get_combined_filter(search_terms, exclude_filter)
         logger.debug(f"WideFilterManagerMixin.wide_filter: combined_filter = {combined_filter}")
         qs = self.filter(combined_filter).order_by().distinct('id')
         # Use the above qs as the filter for a clean queryset.  This allows users of the wide_filter to do whatever
@@ -70,10 +76,10 @@ class WideFilterModelMixin:
 
     @classmethod
     def get_wide_filter(cls, search_terms, wide_filter_name='name'):
-        return_exclude_filter = False
+        is_exclude_filter = False
         if wide_filter_name.startswith("-"):
             wide_filter_name = wide_filter_name[1:]
-            return_exclude_filter = True
+            is_exclude_filter = True
         wide_filter_fields = cls.get_wide_filter_fields(wide_filter_name)
         q = models.Q()
         if isinstance(wide_filter_fields, str):
@@ -90,7 +96,7 @@ class WideFilterModelMixin:
                     if not sc_utils.is_valid_uuid(search_term):
                         # Not a valid uuid so shouldn't be used to filter on uuid fields.
                         continue
-                if wide_filter_name in cls.wide_filter_fields_any:
+                if is_exclude_filter or wide_filter_name in cls.wide_filter_fields_any:
                     term_q = term_q | models.Q(**{f"{field}{filter_func}": search_term})
                 else:
                     term_q = term_q & models.Q(**{f"{field}{filter_func}": search_term})
