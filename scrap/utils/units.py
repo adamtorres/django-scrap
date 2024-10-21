@@ -38,3 +38,27 @@ def humanize_pack_quantity(pack_quantity):
             return "dz"
         case _:
             return f"{pack_quantity}pk"
+
+
+def split_units(value):
+    """
+    Takes:
+    "5lb" and returns {"amount": 5, "unit": "lb"}
+    "5dz" and returns {"amount": 5, "unit": "dz"}
+    "5g" and returns {"amount": 5, "unit": "g"}
+    "5" and returns {"amount": 5, "unit": "ct"}
+    "5ct" and returns {"amount": 5, "unit": "ct"}
+    "5gal" and returns {"amount": 5, "unit": "gal"}
+    "5oz" and returns {"amount": 5, "unit": "oz"}
+    "#10" and returns {"amount": 0, "unit": "#10"}
+    "#5" and returns {"amount": 0, "unit": "#5"}
+    "2.25oz" and returns {"amount": 2.25, "unit": "oz"}
+    ".25oz" and returns {"amount": 0.25, "unit": "oz"}
+    """
+    amount = ""
+    for c in value:
+        if c not in "0123456789.":
+            break
+        amount += c
+    unit = value[len(amount):]
+    return {"amount": float(amount), "unit": unit}

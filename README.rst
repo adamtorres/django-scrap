@@ -7,21 +7,21 @@ Scrap is a collection of useful stuff that I'm tired of rewriting/copying from p
 Quick Start
 -----------
 
-1. Add 'scrap' to your 'INSTALLED_APPS' setting like this::
+1. Add 'scrap' to your '``INSTALLED_APPS``' setting like this::
 
     INSTALLED_APPS = [
         ...
         'scrap',
     ]
 
-2. Add 'scrap.db.QueryCountDebugMiddleware' to your 'MIDDLEWARE' setting if you want queries logged.  I believe it has to be first in the list.  Probably should check on that.::
+2. Add 'scrap.db.QueryCountDebugMiddleware' to your '``MIDDLEWARE``' setting if you want queries logged.  I believe it has to be first in the list.  Probably should check on that.::
 
     MIDDLEWARE = [
         'scrap.db.QueryCountDebugMiddleware',
         ...
     ]
 
-3. Make sure LOGGING shows DEBUG level to see the query logging.  An example of such is::
+3. Make sure '``LOGGING``' shows '``DEBUG``' level to see the query logging.  An example of such is::
 
     LOGGING = {
         'version': 1,
