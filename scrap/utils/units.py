@@ -1,3 +1,4 @@
+import decimal
 import math
 
 
@@ -55,10 +56,13 @@ def split_units(value):
     "2.25oz" and returns {"amount": 2.25, "unit": "oz"}
     ".25oz" and returns {"amount": 0.25, "unit": "oz"}
     """
+    # TODO: unit_size = "8-13#" makes adjusted_weight=8 and adjusted_weight_unit="-13#"
+    # TODO: unit_size = "10#avg" makes adjusted_weight=10 and adjusted_weight_unit="#avg"
     amount = ""
     for c in value:
         if c not in "0123456789.":
             break
         amount += c
     unit = value[len(amount):]
-    return {"amount": float(amount), "unit": unit}
+    amount = decimal.Decimal(amount) if amount else decimal.Decimal(0.0)
+    return {"amount": amount, "unit": unit}
