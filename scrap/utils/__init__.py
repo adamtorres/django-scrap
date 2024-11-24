@@ -4,6 +4,7 @@ import sys
 from .dates import get_monthly_date_range, last_months, recent_quarters
 from .lists import reduce_list
 from .string import cutoff
+from .table import Table
 from .units import humanize_pack_quantity, reduce_dozens, reduce_quantity_by_pack, split_units
 from .uuid import is_valid_uuid
 
